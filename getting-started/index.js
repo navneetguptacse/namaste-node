@@ -34,6 +34,14 @@ async function main() {
   const count = await collection.countDocuments({});
   console.log("Count of Documents: ", count);
 
+  // Find Specific Document
+  // const specificDocument = await collection.findOne({ name: "Kunal Kumar Arya" });
+  // console.log("Specific Document: ", specificDocument);
+
+  // Or,
+  const specificDocument = await collection.find({ name: "Kunal Kumar Arya" }).toArray();
+  console.log("Specific Document: ", specificDocument);
+
   return "done.";
 }
 
