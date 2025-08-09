@@ -2,18 +2,21 @@ const express = require("express");
 
 const app = express();
 
-app.use("/test", (req, res) => {
-  res.send("This is the test path");
+app.get("/route", (req, res) => { 
+  // here '/route' could be any (text ('/abc'), regex ('/.*fly/'), regular expression (ab+c, ab?c, ab*c))
+  res.send({ path: '/route' });
 });
 
-app.use("/user", (req, res) => {
-  res.send("This is the user path");
-});
+app.get("/user/:name/:id", (req, res) => { // for example, /user/Navneet/29474?msg=Hello
+  // here '/:name' & '/:id' are route parameters that capture dynamic values from the URL
+  console.log(req.params);
 
-app.use("/", (req, res) => {
-  res.send("This is the root '/' path");
+  // here 'msg' is a query parameter that can be accessed via req.query
+  console.log(req.query.msg);
+  res.send({ name: "Navneet Gupta", email: "navneet@gmail.com" });
 });
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
+
