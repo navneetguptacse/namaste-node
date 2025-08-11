@@ -4,22 +4,57 @@ const User = require("./models/user");
 
 const app = express();
 
+app.use(express.json());
+
+app.get("/user", async (req, res) => {
+  const email = req.body.email;
+  try {
+    const user = await User.findOne({ email: email });
+    if (user) {
+      res.status(400).send("User not found");
+    }
+    res.send(user);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+});
+
+app.get("/feed", async (req, res) => {
+  try {
+    const user = await User.find();
+    if (user.length === 0) {
+      res.status(400).send("Not found");
+    }
+    res.send(user);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+});
+
 app.post("/signup", async (req, res) => {
-  const userObj = {
-    firstName: "Kunal",
-    lastName: "Kumar",
-    email: "kunal@gmail.com",
-    password: "kunal@123",
-    age: 23,
-    gender: "male",
-  };
+  const user = new User(req.body);
 
   try {
-    const user = new User(userObj);
     await user.save();
     res.send("User added successfully");
   } catch (err) {
-    res.status(err.status).send("Somthing went wrong");
+    res.status(400).send({ message: err.message });
+  }
+});
+
+app.patch("/update", async (req, res) => {
+  const id = req.body.id;
+  const data = req.body;
+  try {
+    const user = await User.findByIdAndUpdate({ _id: id }, data, {
+      returnDocument: "after",
+      runValidators: true,
+    });
+
+    console.log(user);
+    res.status(200).send("User Updated Successfully.");
+  } catch (err) {
+    res.status(400).send({ message: err.message });
   }
 });
 
