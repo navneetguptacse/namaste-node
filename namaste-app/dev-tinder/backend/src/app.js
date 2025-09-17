@@ -1,10 +1,34 @@
 const express = require("express");
 const connectDB = require("./config/database");
 const User = require("./models/user");
+// const { authUser } = require("./middleware/user");
 
 const app = express();
 
 app.use(express.json());
+
+// app.use('/user', (req, res, next) => {
+//   // const {name} = req.query;
+//   // if(!name) throw new Error('Name is required') // If any error -> global error handler will handle it.
+//   // res.send(`Welcome ${name}!`);
+
+//   try {
+//     const {name} = req.query;
+//     if(!name) throw new Error('Name is required') // If any error
+//     res.send(`Welcome ${name}!`);
+//   } catch (err) {
+//     console.log({error: err.message});
+//     // res.status(500).send({error: err.message})
+//     // Or, send it to global error handler
+//     next(err);
+//   }
+// })
+
+// Global error handler - Always at the very end of all app.use and route definitions.
+// app.use((err, req, res, next) => {
+//   console.error({ error: err.message });
+//   res.status(500).send({ error: err.message });
+// });
 
 app.get("/user", async (req, res) => {
   const email = req.body.email;
@@ -68,3 +92,13 @@ connectDB()
   .catch((err) => {
     console.log("✗ Database connection failed!!");
   });
+
+// app.listen(3000, () => {
+//   console.log("✓ Server is running on port 3000");
+// });
+
+/**
+ * Key rule to remember:
+ * Normal middleware/routes → top.
+ * Error handling middleware → bottom.
+ */
