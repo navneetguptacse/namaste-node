@@ -42,10 +42,35 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.patch("/update", async (req, res) => {
-  const id = req.body.id;
+// app.patch("/update", async (req, res) => {
+//   const id = req.body.id;
+//   const data = req.body;
+//   try {
+//     const user = await User.findByIdAndUpdate({ _id: id }, data, {
+//       returnDocument: "after",
+//       runValidators: true,
+//     });
+
+//     console.log(user);
+//     res.status(200).send("User Updated Successfully.");
+//   } catch (err) {
+//     res.status(400).send({ message: err.message });
+//   }
+// });
+
+app.patch("/update/:id", async (req, res) => {
+  const id = req.params.id;
   const data = req.body;
+  const updateList = ["password", "age", "gender", "photo", "skills", "about"];
   try {
+    const isUpdateMatched = Object.keys(data).every((k) =>
+      updateList.includes(k)
+    );
+
+    if (!isUpdateMatched) {
+      throw new Error("Invalid update fields provided");
+    }
+
     const user = await User.findByIdAndUpdate({ _id: id }, data, {
       returnDocument: "after",
       runValidators: true,
