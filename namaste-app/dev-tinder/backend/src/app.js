@@ -1,6 +1,9 @@
 const express = require("express");
 const connectDB = require("./config/database");
 const User = require("./models/user");
+const { signUpData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
+const validator = require("validator");
 
 const app = express();
 
@@ -32,31 +35,52 @@ app.get("/feed", async (req, res) => {
 });
 
 app.post("/signup", async (req, res) => {
-  const user = new User(req.body);
-
   try {
+    const validatedData = signUpData(req);
+
+    const passwordHash = await bcrypt.hash(validatedData.password, 10);
+    validatedData.password = passwordHash;
+
+    const user = new User(validatedData);
     await user.save();
-    res.send("User added successfully");
+
+    res.status(201).send({
+      message: "User registered successfully",
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    });
   } catch (err) {
     res.status(400).send({ message: err.message });
   }
 });
 
-// app.patch("/update", async (req, res) => {
-//   const id = req.body.id;
-//   const data = req.body;
-//   try {
-//     const user = await User.findByIdAndUpdate({ _id: id }, data, {
-//       returnDocument: "after",
-//       runValidators: true,
-//     });
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-//     console.log(user);
-//     res.status(200).send("User Updated Successfully.");
-//   } catch (err) {
-//     res.status(400).send({ message: err.message });
-//   }
-// });
+    if (!validator.isEmail(email)) {
+      return res.status(400).send({ message: "Invalid credentials" });
+    }
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(400).send({ message: "Invalid credentials" });
+    }
+
+    const passwordCheck = await bcrypt.compare(password, user.password);
+    if (!passwordCheck) {
+      return res.status(400).send({ message: "Invalid credentials" });
+    }
+
+    res.status(200).send({ message: "Login successful", user });
+  } catch (err) {
+    res.status(500).send({ message: "Something went wrong" });
+  }
+});
 
 app.patch("/update/:id", async (req, res) => {
   const id = req.params.id;
@@ -71,13 +95,40 @@ app.patch("/update/:id", async (req, res) => {
       throw new Error("Invalid update fields provided");
     }
 
-    const user = await User.findByIdAndUpdate({ _id: id }, data, {
-      returnDocument: "after",
+    if (data.password) {
+      if (!validator.isStrongPassword(password)) {
+        throw new Error(
+          "Password must include uppercase, lowercase, number, and special character"
+        );
+      }
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const user = await User.findByIdAndUpdate(id, data, {
+      new: true, // return updated document
+      // Or,
+      // returnDocument: "after",
       runValidators: true,
     });
 
-    console.log(user);
-    res.status(200).send("User Updated Successfully.");
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    res.status(200).send({
+      message: "User updated successfully",
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        age: user.age,
+        gender: user.gender,
+        photo: user.photo,
+        about: user.about,
+        skills: user.skills,
+      },
+    });
   } catch (err) {
     res.status(400).send({ message: err.message });
   }
