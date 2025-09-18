@@ -4,10 +4,14 @@ const User = require("./models/user");
 const { signUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
 app.use(express.json());
+
+app.use(cookieParser()); // cookie parser middleware
 
 app.get("/user", async (req, res) => {
   const email = req.body.email;
@@ -58,6 +62,25 @@ app.post("/signup", async (req, res) => {
   }
 });
 
+app.get("/profile", async (req, res) => {
+  try {
+    const cookies = req.cookies;
+    const { token } = cookies;
+    if (!token) {
+      throw new Error("User is not logged-in");
+    }
+    const { _id } = jwt.verify(token, "My@Secret$Key#123");
+
+    const user = await User.findById({ _id });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    res.send({ message: "User profile fetched sucessfully", user });
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+});
+
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -76,6 +99,9 @@ app.post("/login", async (req, res) => {
       return res.status(400).send({ message: "Invalid credentials" });
     }
 
+    const token = jwt.sign({ _id: user._id }, "My@Secret$Key#123");
+
+    res.cookie("token", token);
     res.status(200).send({ message: "Login successful", user });
   } catch (err) {
     res.status(500).send({ message: "Something went wrong" });
