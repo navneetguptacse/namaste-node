@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 const secretKey = "My@Secret$Key#123";
 
@@ -37,7 +37,10 @@ const UserSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: [true, "This email is already in use. Try again with another email."],
+      unique: [
+        true,
+        "This email is already in use. Try again with another email.",
+      ],
       lowercase: true,
       trim: true,
       validate(value) {
@@ -118,12 +121,29 @@ UserSchema.methods.getJwtToken = async function () {
   });
 
   return token;
-}
+};
 
 UserSchema.methods.verifyPwd = async function (password) {
   const user = this;
   return await bcrypt.compare(password, user.password);
-}
+};
+
+UserSchema.statics.safeUpdate = async (id, updates, safeList) => {
+  const keys = Object.keys(updates);
+  const isValid = keys.every((k) => safeList.includes(k));
+
+  if (!isValid) {
+    throw new Error("Invalid update fields provided");
+  }
+
+  const user = await User.findByIdAndUpdate(id, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!user) throw new Error("User not found");
+  return user;
+};
 
 const User = mongoose.model("User", UserSchema);
 module.exports = User;

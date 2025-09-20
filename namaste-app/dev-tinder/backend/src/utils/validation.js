@@ -1,7 +1,17 @@
 const validator = require("validator");
 
 const signUpData = (req) => {
-  const { firstName, lastName, email, password, age, gender, photo, about, skills } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    age,
+    gender,
+    photo,
+    about,
+    skills,
+  } = req.body;
 
   // Required fields
   if (!firstName || firstName.trim().length === 0) {
@@ -61,18 +71,46 @@ const signUpData = (req) => {
 
     const isValid = skills.every(
       (s) =>
-        typeof s === "string" &&
-        s.trim().length >= 2 &&
-        s.trim().length <= 30
+        typeof s === "string" && s.trim().length >= 2 && s.trim().length <= 30
     );
     if (!isValid) {
-      throw new Error("Each skill must be a string between 2 and 30 characters");
+      throw new Error(
+        "Each skill must be a string between 2 and 30 characters"
+      );
     }
   }
 
-  return { firstName, lastName, email, password, age, gender, photo, about, skills };
+  return {
+    firstName,
+    lastName,
+    email,
+    password,
+    age,
+    gender,
+    photo,
+    about,
+    skills,
+  };
+};
+
+const safeUpdate = (req) => {
+  const safeUpdates = [
+    "firstName",
+    "lastName",
+    "age",
+    "gender",
+    "photo",
+    "about",
+    "skills",
+  ];
+  const isSafe = Object.keys(req.body).every((k) => safeUpdates.includes(k));
+
+  if (!isSafe) {
+    throw new Error("Invalid update fields provided");
+  }
 };
 
 module.exports = {
   signUpData,
+  safeUpdate,
 };
