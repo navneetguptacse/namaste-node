@@ -5,38 +5,13 @@ const { signUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
+const { authUser } = require("./middleware/user");
 
 const app = express();
 
 app.use(express.json());
 
-app.use(cookieParser()); // cookie parser middleware
-
-app.get("/user", async (req, res) => {
-  const email = req.body.email;
-  try {
-    const user = await User.findOne({ email: email });
-    if (user) {
-      res.status(400).send("User not found");
-    }
-    res.send(user);
-  } catch (err) {
-    res.status(400).send({ message: err.message });
-  }
-});
-
-app.get("/feed", async (req, res) => {
-  try {
-    const user = await User.find();
-    if (user.length === 0) {
-      res.status(400).send("Not found");
-    }
-    res.send(user);
-  } catch (err) {
-    res.status(400).send({ message: err.message });
-  }
-});
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
   try {
@@ -62,25 +37,6 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.get("/profile", async (req, res) => {
-  try {
-    const cookies = req.cookies;
-    const { token } = cookies;
-    if (!token) {
-      throw new Error("User is not logged-in");
-    }
-    const { _id } = jwt.verify(token, "My@Secret$Key#123");
-
-    const user = await User.findById({ _id });
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-    res.send({ message: "User profile fetched sucessfully", user });
-  } catch (err) {
-    res.status(400).send({ message: err.message });
-  }
-});
-
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -89,75 +45,41 @@ app.post("/login", async (req, res) => {
       return res.status(400).send({ message: "Invalid credentials" });
     }
 
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).send({ message: "Invalid credentials" });
     }
 
-    const passwordCheck = await bcrypt.compare(password, user.password);
+    const passwordCheck = await user.verifyPwd(password);
+
     if (!passwordCheck) {
       return res.status(400).send({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ _id: user._id }, "My@Secret$Key#123");
+    const token = await user.getJwtToken();
 
-    res.cookie("token", token);
+    res.cookie("token", token, { httpOnly: true });
     res.status(200).send({ message: "Login successful", user });
   } catch (err) {
+    console.error("Login error:", err.message);
     res.status(500).send({ message: "Something went wrong" });
   }
 });
 
-app.patch("/update/:id", async (req, res) => {
-  const id = req.params.id;
-  const data = req.body;
-  const updateList = ["password", "age", "gender", "photo", "skills", "about"];
+app.get("/profile", authUser, async (req, res) => {
   try {
-    const isUpdateMatched = Object.keys(data).every((k) =>
-      updateList.includes(k)
-    );
-
-    if (!isUpdateMatched) {
-      throw new Error("Invalid update fields provided");
-    }
-
-    if (data.password) {
-      if (!validator.isStrongPassword(password)) {
-        throw new Error(
-          "Password must include uppercase, lowercase, number, and special character"
-        );
-      }
-      data.password = await bcrypt.hash(data.password, 10);
-    }
-
-    const user = await User.findByIdAndUpdate(id, data, {
-      new: true, // return updated document
-      // Or,
-      // returnDocument: "after",
-      runValidators: true,
-    });
-
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    res.status(200).send({
-      message: "User updated successfully",
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        age: user.age,
-        gender: user.gender,
-        photo: user.photo,
-        about: user.about,
-        skills: user.skills,
-      },
-    });
+    res
+      .status(200)
+      .send({ message: "User profile fetched sucessfully", user: req.user });
   } catch (err) {
-    res.status(400).send({ message: err.message });
+    res
+      .status(400)
+      .send({ message: err.message || "Failed to fetch user profile." });
   }
+});
+
+app.post("/send-request", authUser, (req, res) => {
+  res.send("Connection request has been sent");
 });
 
 connectDB()

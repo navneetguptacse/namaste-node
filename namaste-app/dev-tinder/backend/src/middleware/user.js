@@ -1,9 +1,28 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
-export function authUser(req, res, next) {
-    const token = req.headers['x-api-key'];
-    if(!token) {
-        res.status(401).send('User not authenticated!');
-    } else {
-        next();
+const secretKey = "My@Secret$Key#123";
+
+const authUser = async(req, res, next) => {
+  try {
+    const { token } = req.cookies;
+
+    if (!token) {
+      throw new Error('Authentication token is missing.');
     }
+
+    const { _id } = jwt.verify(token, secretKey);
+    const user = await User.findById(_id);
+
+    if (!user) {
+      throw new Error('User not found. Invalid token.');
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(401).send({ message: err.message || 'Unauthorized access' });
+  }
 }
+
+module.exports = {authUser}
