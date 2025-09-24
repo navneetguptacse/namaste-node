@@ -1,28 +1,28 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const jwt = require("jsonwebtoken");
+const User = require("../models/user");
 
 const secretKey = "My@Secret$Key#123";
 
-const authUser = async(req, res, next) => {
+const authUser = async (req, res, next) => {
   try {
     const { token } = req.cookies;
 
     if (!token) {
-      throw new Error('Authentication token is missing.');
+      throw new Error("Unauthorized access");
     }
 
     const { _id } = jwt.verify(token, secretKey);
     const user = await User.findById(_id);
 
     if (!user) {
-      throw new Error('User not found. Invalid token.');
+      throw new Error("User not found. Invalid token.");
     }
 
     req.user = user;
     next();
   } catch (err) {
-    res.status(401).send({ message: err.message || 'Unauthorized access' });
+    res.status(401).send({ message: err.message || "Unauthorized access" });
   }
-}
+};
 
-module.exports = {authUser}
+module.exports = { authUser };

@@ -1,7 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
-
 const { signUpData } = require("../utils/validation");
 const User = require("../models/user");
 
@@ -17,7 +16,7 @@ authRouter.post("/register", async (req, res) => {
     const user = new User(validatedData);
     await user.save();
 
-    res.status(201).send({
+    return res.status(201).json({
       message: "User registered successfully",
       user: {
         id: user._id,
@@ -27,7 +26,7 @@ authRouter.post("/register", async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(400).send({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 });
 
@@ -56,10 +55,9 @@ authRouter.post("/login", async (req, res) => {
       httpOnly: true,
       expires: new Date(Date.now() + 60 * 60 * 1000),
     });
-    res.status(200).send({ message: "Login successful", user });
+    return res.status(200).json({ message: "Login successful", user });
   } catch (err) {
-    console.error("Login error:", err.message);
-    res.status(500).send({ message: "Something went wrong" });
+    return res.status(500).json({ message: "Something went wrong" });
   }
 });
 
@@ -70,9 +68,9 @@ authRouter.post("/logout", (req, res) => {
       throw new Error("User already logged out");
     }
     res.cookie("token", null, { expires: new Date(Date.now()) });
-    res.send("User logout successfully");
+    return res.json({ message: "User logout successfully" });
   } catch (err) {
-    res.status(400).send({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 });
 
