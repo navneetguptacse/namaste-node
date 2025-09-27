@@ -1,8 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-const secretKey = "My@Secret$Key#123";
-
 const authUser = async (req, res, next) => {
   try {
     const { token } = req.cookies;
@@ -11,7 +9,7 @@ const authUser = async (req, res, next) => {
       throw new Error("Unauthorized access");
     }
 
-    const { _id } = jwt.verify(token, secretKey);
+    const { _id } = jwt.verify(token, process.env.MY_SECRET_KEY);
     const user = await User.findById(_id);
 
     if (!user) {

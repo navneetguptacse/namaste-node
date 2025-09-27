@@ -60,6 +60,8 @@ profileRouter.patch("/me/password", authUser, async (req, res) => {
     user.password = passwordHash;
     await user.save();
 
+    // res.cookie("token", null, { expires: new Date(Date.now()) });
+
     return res.json({ message: "Password updated sucessfully." });
   } catch (err) {
     console.error("Password update error:", err);

@@ -5,6 +5,7 @@ const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const connectionRouter = require("./routes/connections");
 const userRouter = require("./routes/users");
+require("@dotenvx/dotenvx").config();
 
 const app = express();
 
